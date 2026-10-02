@@ -13,6 +13,7 @@ mod edge_cases;
 mod hidden_test;
 #[cfg(feature = "custom_styling")]
 mod inner_style_test;
+mod inline_table_test;
 mod modifiers_test;
 mod padding_test;
 mod presets_test;

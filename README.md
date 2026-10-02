@@ -27,17 +27,22 @@ comfy-table = { package = "comfy-table-inline", version = "8.0.2" }
 
 ## Inline Table Example
 
+> **Best Practice**: When composing complex or multi-level nested tables, define them **inside-out** (bottom-up):
+> configure your innermost `InlineTable` instances first, attach them to parent inline tables, and finally assemble the outer `Table`.
+
 ```rust
 use comfy_table::{InlineTable, Table};
 
 fn main() {
-    let mut table = Table::new();
+    // 1. Define the inline table first (inside-out)
     let mut inline = InlineTable::new();
     inline
         .set_header(vec!["Sub-Item", "Quantity"])
         .add_row(vec!["Item A", "10"])
         .add_row(vec!["Item B", "20"]);
 
+    // 2. Assemble the outer table
+    let mut table = Table::new();
     table
         .set_header(vec!["Category", "Details"])
         .add_row(vec!["Group 1", "Main entry"])

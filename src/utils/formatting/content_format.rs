@@ -8,18 +8,25 @@ use unicode_width::UnicodeWidthStr;
 use super::content_split::{measure_text_width, split_line};
 #[cfg(feature = "tty")]
 use crate::style::{map_attribute, map_color};
-use crate::{cell::Cell, row::Row, style::CellAlignment, table::Table, utils::ColumnDisplayInfo};
+use crate::{
+    InlineTable, cell::Cell, row::Row, style::CellAlignment, table::Table, utils::ColumnDisplayInfo,
+};
+
+pub struct BuildInlineTableItem {
+    pub items: Vec<BuildTableItem>,
+    pub table: InlineTable,
+}
 
 pub enum BuildTableItem {
     Row(Vec<Vec<String>>),
-    Inline(Vec<BuildTableItem>),
+    Inline(BuildInlineTableItem),
 }
 
 impl BuildTableItem {
     pub fn len(&self) -> usize {
         match self {
             BuildTableItem::Row(row) => row.len(),
-            BuildTableItem::Inline(inline) => inline.len(),
+            BuildTableItem::Inline(inline) => inline.items.len(),
         }
     }
 }
@@ -46,7 +53,7 @@ pub fn retreive_inline_table(
         .iter()
         .find(|t| t.index_row_above == row_above_index)
     {
-        return Some(inline_table.build_inline_table(table.clone(), row_above_index));
+        return Some(inline_table.build_inline_table(table, row_above_index));
     };
     None
 }

@@ -689,6 +689,37 @@ impl Table {
         }
     }
 
+    /// Add an inline nested table directly beneath the most recently added row.
+    ///
+    /// If no rows have been added yet, the inline table is rendered before the first row.
+    /// The inline table automatically adopts border styles and horizontal separators from this table.
+    ///
+    /// # Best Practice: Inside-Out Construction
+    ///
+    /// When composing tables with nested inline tables, it is best practice to construct them
+    /// **inside-out** (bottom-up): define and configure the innermost [`InlineTable`] instances first,
+    /// attach them into intermediate tables, and finally assemble the outer [`Table`].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use comfy_table::{InlineTable, Table};
+    ///
+    /// // 1. Define the inline table first (inside-out)
+    /// let mut inline = InlineTable::new();
+    /// inline
+    ///     .set_header(vec!["Item", "Value"])
+    ///     .add_row(vec!["Nested 1", "Alpha"])
+    ///     .add_row(vec!["Nested 2", "Beta"]);
+    ///
+    /// // 2. Assemble the outer table
+    /// let mut table = Table::new();
+    /// table
+    ///     .set_header(vec!["Section", "Summary"])
+    ///     .add_row(vec!["Header Row", "Primary content"])
+    ///     .add_inline_table(inline)
+    ///     .add_row(vec!["Next Row", "More content"]);
+    /// ```
     pub fn add_inline_table(&mut self, mut table: InlineTable) -> &mut Self {
         let index_row_above: Option<usize> = match self.rows.last() {
             Some(row) => row.index,

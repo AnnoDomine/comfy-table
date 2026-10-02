@@ -1,8 +1,13 @@
 use std::iter::repeat_n;
 
+use crossterm::style;
+
 use crate::{
+    inline_table,
     table::Table,
-    utils::{ColumnDisplayInfo, formatting::content_format::BuildTableItem},
+    utils::{
+        ColumnDisplayInfo, arrangement::arrange_content, formatting::content_format::BuildTableItem,
+    },
 };
 
 pub(crate) fn draw_borders(
@@ -82,23 +87,42 @@ fn draw_rows(
     while let Some((row_index, item)) = row_iter.next() {
         match item {
             BuildTableItem::Inline(inline) => {
+                let style = table.style();
+                let width = table.width();
+                let arrangement = table.content_arrangement();
+                let mut inline_table = inline.table.table.clone();
+                inline_table.load_style(style);
+                inline_table.set_content_arrangement(arrangement);
+                if let Some(w) = width {
+                    inline_table.set_width(w);
+                }
                 // Remove the last dran seperator line to visual identify the inline table.
                 lines.pop();
 
                 // Add the header seperator as line if table has header seperators to identify start of inner table.
                 if table.style.has_header_separator() {
-                    lines.push(draw_horizontal_lines(table, display_info, true));
+                    lines.push(draw_horizontal_lines(
+                        &inline_table,
+                        &arrange_content(&inline_table),
+                        true,
+                    ));
                 }
 
+                println!("{:}", inline_table);
+
                 // Retreive inner table as a string vector.
-                let mut draw_inner_table = draw_borders(table, inline, display_info);
+                let mut draw_inner_table = draw_borders(&inline_table, &inline.items, &arrange_content(&inline_table));
 
                 // Remove first line of inner table draw vector as the outer table have the seperator at it own.
                 draw_inner_table.remove(0);
                 // Remove the last drawn line of the inner table and apply the header separator line as a identifier of the end of an inner table.
                 draw_inner_table.pop();
                 if table.style.has_header_separator() {
-                    draw_inner_table.push(draw_horizontal_lines(table, display_info, true));
+                    draw_inner_table.push(draw_horizontal_lines(
+                        &inline_table,
+                        &arrange_content(&inline_table),
+                        true,
+                    ));
                 }
 
                 // Append the inner table to the draw vector.
@@ -160,6 +184,10 @@ fn draw_horizontal_lines(
 ) -> String {
     // Styling depends on whether we're currently on the header line or not.
     let separator = if header {
+        println!(
+            "[draw_horizontal_lines] {:?}",
+            table.style().top_border
+        );
         table.style.header_separator
     } else {
         table.style.row_separator
