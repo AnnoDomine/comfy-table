@@ -46,6 +46,12 @@ impl DerefMut for InlineTable {
     }
 }
 
+impl Default for InlineTable {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl InlineTable {
     pub fn new() -> Self {
         Self {

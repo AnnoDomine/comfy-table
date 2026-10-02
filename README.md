@@ -1,10 +1,52 @@
-# Comfy-table
+# Comfy-table-inline
 
-[![GitHub Actions Workflow](https://github.com/Nukesor/comfy-table/actions/workflows/test.yml/badge.svg)](https://github.com/Nukesor/comfy-table/actions/workflows/test.yml)
-[![docs](https://docs.rs/comfy-table/badge.svg)](https://docs.rs/comfy-table/)
-[![license](http://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/nukesor/comfy-table/blob/main/LICENSE)
-[![Crates.io](https://img.shields.io/crates/v/comfy-table.svg)](https://crates.io/crates/comfy-table)
-[![codecov](https://codecov.io/gh/nukesor/comfy-table/branch/main/graph/badge.svg)](https://codecov.io/gh/nukesor/comfy-table)
+[![GitHub Actions Workflow](https://github.com/AnnoDomine/comfy-table/actions/workflows/test.yml/badge.svg)](https://github.com/AnnoDomine/comfy-table/actions/workflows/test.yml)
+[![docs](https://docs.rs/comfy-table-inline/badge.svg)](https://docs.rs/comfy-table-inline/)
+[![license](http://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/AnnoDomine/comfy-table/blob/main/LICENSE)
+[![Crates.io](https://img.shields.io/crates/v/comfy-table-inline.svg)](https://crates.io/crates/comfy-table-inline)
+
+> [!IMPORTANT]
+> **Fork Notice**: This crate (`comfy-table-inline`) is a dedicated fork of [comfy-table](https://github.com/Nukesor/comfy-table) by Arne Beer.
+>
+> - **Reason for fork**: Upstream prefers not to add inline table support to avoid complexity; this fork exists specifically to provide this feature (e.g. for projects like `rrdu` / `rust-recursive-deps-updater`).
+> - **Issue reporting**: Please direct all generic bug reports or feature requests for upstream features to the [original project](https://github.com/Nukesor/comfy-table). For issues specific to inline tables or this fork, please file them at [AnnoDomine/comfy-table](https://github.com/AnnoDomine/comfy-table).
+
+## Installation
+
+Add `comfy-table-inline` to your `Cargo.toml`:
+
+```toml
+# Option 1: Direct dependency
+comfy-table-inline = "8.0.2"
+
+# Option 2: Drop-in replacement with original package alias
+comfy-table = { package = "comfy-table-inline", version = "8.0.2" }
+```
+
+> **Note**: Because `[lib] name = "comfy_table"` is preserved, you can continue using `use comfy_table::...` in your code with either option!
+
+## Inline Table Example
+
+```rust
+use comfy_table::{InlineTable, Table};
+
+fn main() {
+    let mut table = Table::new();
+    let mut inline = InlineTable::new();
+    inline
+        .set_header(vec!["Sub-Item", "Quantity"])
+        .add_row(vec!["Item A", "10"])
+        .add_row(vec!["Item B", "20"]);
+
+    table
+        .set_header(vec!["Category", "Details"])
+        .add_row(vec!["Group 1", "Main entry"])
+        .add_inline_table(inline)
+        .add_row(vec!["Group 2", "Another entry"]);
+
+    println!("{table}");
+}
+```
 
 ![comfy-table](https://raw.githubusercontent.com/Nukesor/images/main/comfy_table.gif)
 
@@ -14,6 +56,8 @@ Comfy-table is designed as a library for building beautiful terminal tables, whi
 
 ## Table of Contents
 
+- [Installation](#installation)
+- [Inline Table Example](#inline-table-example)
 - [Features](#features)
 - [Examples](#examples)
 - [Feature Flags](#feature-flags)

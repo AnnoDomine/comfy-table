@@ -1,16 +1,29 @@
 [package]
-name = "comfy-table"
-description = "An easy to use library for building beautiful tables with automatic content wrapping"
-version = "8.0.1"
-authors = ["Arne Beer <contact@arne.beer>"]
-homepage = "https://github.com/nukesor/comfy-table"
-repository = "https://github.com/nukesor/comfy-table"
-documentation = "https://docs.rs/comfy-table/"
+name = "comfy-table-inline"
+description = "A fork of comfy-table by Arne Beer adding inline table support."
+version = "8.0.2"
+authors = [
+    "Arne Beer <contact@arne.beer>",
+    "Dominic Seel <seel.dominic@googlemail.com>",
+]
+homepage = "https://github.com/AnnoDomine/comfy-table"
+repository = "https://github.com/AnnoDomine/comfy-table"
+documentation = "https://docs.rs/comfy-table-inline/"
 license = "MIT"
 keywords = ["table", "terminal", "unicode"]
 readme = "README.md"
 edition = "2024"
 rust-version = "1.88"
+exclude = [
+    ".github",
+    ".taplo.toml",
+    "codecov.yml",
+    "Justfile",
+    "rustfmt.toml.nightly",
+]
+
+[lib]
+name = "comfy_table"
 
 [badges]
 maintenance = { status = "actively-developed" }
