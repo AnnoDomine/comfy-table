@@ -7,6 +7,7 @@
 
 mod cell;
 mod column;
+mod inline_table;
 mod row;
 mod style;
 mod table;
@@ -23,6 +24,7 @@ pub use style::*;
 pub use crate::{
     cell::{Cell, Cells},
     column::Column,
+    inline_table::InlineTable,
     row::Row,
     table::{ColumnCellIter, Table},
 };

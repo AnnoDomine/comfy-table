@@ -9,6 +9,7 @@ use std::{
 use crate::{
     cell::Cell,
     column::Column,
+    inline_table::InlineTable,
     row::Row,
     style::{ColumnConstraint, ContentArrangement, TableStyle, presets::ASCII_FULL},
     utils::build_table,
@@ -25,6 +26,7 @@ pub struct Table {
     pub(crate) style: TableStyle,
     pub(crate) header: Option<Row>,
     pub(crate) rows: Vec<Row>,
+    pub(crate) inline_tables: Vec<InlineTable>,
     pub(crate) arrangement: ContentArrangement,
     pub(crate) delimiter: Option<char>,
     pub(crate) truncation_indicator: String,
@@ -62,6 +64,7 @@ impl Table {
             columns: Vec::new(),
             header: None,
             rows: Vec::new(),
+            inline_tables: Vec::new(),
             arrangement: ContentArrangement::Disabled,
             delimiter: None,
             truncation_indicator: "…".to_string(),
@@ -684,6 +687,17 @@ impl Table {
                 }
             }
         }
+    }
+
+    pub fn add_inline_table(&mut self, mut table: InlineTable) -> &mut Self {
+        let index_row_above: Option<usize> = match self.rows.last() {
+            Some(row) => row.index,
+            None => None,
+        };
+        table.set_row_above_index(index_row_above);
+        self.inline_tables.push(table);
+
+        self
     }
 }
 

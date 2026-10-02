@@ -32,6 +32,58 @@ fn simple_table() {
 }
 
 #[test]
+fn simple_table_with_inline_table() {
+    let mut table = Table::new();
+    let mut inline = InlineTable::new();
+    inline
+        .set_header(vec!["InlineHeader1", "InlineHeader2", "InlineHeader3"])
+        .add_row(vec![
+            "This is a text",
+            "This is another text",
+            "This is the third text",
+        ])
+        .add_row(vec![
+            "This is another text",
+            "Now\nadd some inline\nmulti line stuff",
+            "This inline is awesome",
+        ]);
+    table
+        .set_header(vec!["Header1", "Header2", "Header3"])
+        .add_row(vec![
+            "This is a text",
+            "This is another text",
+            "This is the third text",
+        ])
+        .add_inline_table(inline)
+        .add_row(vec![
+            "This is another text",
+            "Now\nadd some\nmulti line stuff",
+            "This is awesome",
+        ]);
+
+    println!("{table}");
+    let expected = "
++----------------------+----------------------+------------------------+
+| Header1              | Header2              | Header3                |
++======================================================================+
+| This is a text       | This is another text | This is the third text |
++======================================================================+
+| InlineHeader1        | InlineHeader2        | InlineHeader3          |
++======================================================================+
+| This is a text       | This is another text | This is the third text |
+|----------------------+----------------------+------------------------|
+| This is another text | Now                  | This inline is awesome |
+|                      | add some inline      |                        |
+|                      | multi line stuff     |                        |
++======================================================================+
+| This is another text | Now                  | This is awesome        |
+|                      | add some             |                        |
+|                      | multi line stuff     |                        |
++----------------------+----------------------+------------------------+";
+    assert_eq!(expected, "\n".to_string() + &table.to_string());
+}
+
+#[test]
 fn missing_column_table() {
     let mut table = Table::new();
     table

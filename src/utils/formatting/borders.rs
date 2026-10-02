@@ -1,10 +1,13 @@
 use std::iter::repeat_n;
 
-use crate::{table::Table, utils::ColumnDisplayInfo};
+use crate::{
+    table::Table,
+    utils::{ColumnDisplayInfo, formatting::content_format::BuildTableItem},
+};
 
 pub(crate) fn draw_borders(
     table: &Table,
-    rows: &[Vec<Vec<String>>],
+    rows: &[BuildTableItem],
     display_info: &[ColumnDisplayInfo],
 ) -> Vec<String> {
     // We know how many lines there should be. Initialize the vector with the rough correct amount.
@@ -66,7 +69,7 @@ fn draw_top_border(table: &Table, display_info: &[ColumnDisplayInfo]) -> String 
 
 fn draw_rows(
     lines: &mut Vec<String>,
-    rows: &[Vec<Vec<String>>],
+    rows: &[BuildTableItem],
     table: &Table,
     display_info: &[ColumnDisplayInfo],
 ) {
@@ -76,48 +79,75 @@ fn draw_rows(
 
     // Iterate over all rows
     let mut row_iter = rows.iter().enumerate().peekable();
-    while let Some((row_index, row)) = row_iter.next() {
-        // Styling depends on whether we're currently in the header or not.
-        let style = if row_index == 0 && table.header.is_some() {
-            table.style.header_lines
-        } else {
-            table.style.content_lines
-        };
-        let left_border = style.left.unwrap_or(' ');
-        let vertical_lines = style.junction.unwrap_or(' ');
-        let right_border = style.right.unwrap_or(' ');
+    while let Some((row_index, item)) = row_iter.next() {
+        match item {
+            BuildTableItem::Inline(inline) => {
+                // Remove the last dran seperator line to visual identify the inline table.
+                lines.pop();
 
-        // Concatenate the line parts and insert the vertical borders if needed
-        for line_parts in row.iter() {
-            let mut line = String::new();
-            if draw_left_border {
-                line.push(left_border);
+                // Add the header seperator as line if table has header seperators to identify start of inner table.
+                if table.style.has_header_separator() {
+                    lines.push(draw_horizontal_lines(table, display_info, true));
+                }
+
+                // Retreive inner table as a string vector.
+                let mut draw_inner_table = draw_borders(table, inline, display_info);
+
+                // Remove first line of inner table draw vector as the outer table have the seperator at it own.
+                draw_inner_table.remove(0);
+                // Remove the last drawn line of the inner table and apply the header separator line as a identifier of the end of an inner table.
+                draw_inner_table.pop();
+                if table.style.has_header_separator() {
+                    draw_inner_table.push(draw_horizontal_lines(table, display_info, true));
+                }
+
+                // Append the inner table to the draw vector.
+                lines.append(&mut draw_inner_table);
             }
+            BuildTableItem::Row(row) => {
+                // Styling depends on whether we're currently in the header or not.
+                let style = if row_index == 0 && table.header.is_some() {
+                    table.style.header_lines
+                } else {
+                    table.style.content_lines
+                };
+                let left_border = style.left.unwrap_or(' ');
+                let vertical_lines = style.junction.unwrap_or(' ');
+                let right_border = style.right.unwrap_or(' ');
 
-            let mut part_iter = line_parts.iter().peekable();
-            while let Some(part) = part_iter.next() {
-                line += part;
-                if part_iter.peek().is_none() && draw_right_border {
-                    line.push(right_border);
-                } else if part_iter.peek().is_some() && draw_vertical_lines {
-                    line.push(vertical_lines);
+                // Concatenate the line parts and insert the vertical borders if needed
+                for line_parts in row.iter() {
+                    let mut line = String::new();
+                    if draw_left_border {
+                        line.push(left_border);
+                    }
+
+                    let mut part_iter = line_parts.iter().peekable();
+                    while let Some(part) = part_iter.next() {
+                        line += part;
+                        if part_iter.peek().is_none() && draw_right_border {
+                            line.push(right_border);
+                        } else if part_iter.peek().is_some() && draw_vertical_lines {
+                            line.push(vertical_lines);
+                        }
+                    }
+
+                    lines.push(line);
+                }
+
+                // Draw the horizontal header line if desired, otherwise continue to the next iteration
+                if row_index == 0 && table.header.is_some() {
+                    if table.style.has_header_separator() {
+                        lines.push(draw_horizontal_lines(table, display_info, true));
+                    }
+                    continue;
+                }
+
+                // Draw a horizontal line, if we desired and if we aren't in the last row of the table.
+                if row_iter.peek().is_some() && table.style.has_row_separator() {
+                    lines.push(draw_horizontal_lines(table, display_info, false));
                 }
             }
-
-            lines.push(line);
-        }
-
-        // Draw the horizontal header line if desired, otherwise continue to the next iteration
-        if row_index == 0 && table.header.is_some() {
-            if table.style.has_header_separator() {
-                lines.push(draw_horizontal_lines(table, display_info, true));
-            }
-            continue;
-        }
-
-        // Draw a horizontal line, if we desired and if we aren't in the last row of the table.
-        if row_iter.peek().is_some() && table.style.has_row_separator() {
-            lines.push(draw_horizontal_lines(table, display_info, false));
         }
     }
 }

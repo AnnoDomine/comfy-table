@@ -10,6 +10,20 @@ use super::content_split::{measure_text_width, split_line};
 use crate::style::{map_attribute, map_color};
 use crate::{cell::Cell, row::Row, style::CellAlignment, table::Table, utils::ColumnDisplayInfo};
 
+pub enum BuildTableItem {
+    Row(Vec<Vec<String>>),
+    Inline(Vec<BuildTableItem>),
+}
+
+impl BuildTableItem {
+    pub fn len(&self) -> usize {
+        match self {
+            BuildTableItem::Row(row) => row.len(),
+            BuildTableItem::Inline(inline) => inline.len(),
+        }
+    }
+}
+
 pub fn delimiter(cell: &Cell, info: &ColumnDisplayInfo, table: &Table) -> char {
     // Determine, which delimiter should be used
     if let Some(delimiter) = cell.delimiter {
@@ -21,6 +35,20 @@ pub fn delimiter(cell: &Cell, info: &ColumnDisplayInfo, table: &Table) -> char {
     } else {
         ' '
     }
+}
+
+pub fn retreive_inline_table(
+    table: &Table,
+    row_above_index: Option<usize>,
+) -> Option<BuildTableItem> {
+    if let Some(inline_table) = table
+        .inline_tables
+        .iter()
+        .find(|t| t.index_row_above == row_above_index)
+    {
+        return Some(inline_table.build_inline_table(table.clone(), row_above_index));
+    };
+    None
 }
 
 /// Returns the formatted content of the table.
@@ -39,26 +67,31 @@ pub fn delimiter(cell: &Cell, info: &ColumnDisplayInfo, table: &Table) -> char {
 /// ```
 ///
 /// The strings for each row will be padded and aligned according to their respective column.
-pub fn format_content(table: &Table, display_info: &[ColumnDisplayInfo]) -> Vec<Vec<Vec<String>>> {
+pub fn format_content(table: &Table, display_info: &[ColumnDisplayInfo]) -> Vec<BuildTableItem> {
     // The content of the whole table
-    let mut table_content = Vec::with_capacity(table.rows.len() + 1);
+    let mut table_content: Vec<BuildTableItem> = Vec::with_capacity(table.rows.len() + 1);
 
     // Format table header if it exists
     if let Some(header) = table.header() {
         table_content.push(format_row(header, display_info, table));
     }
 
+    // Initial append inline table after header
+    if let Some(inline) = retreive_inline_table(table, None) {
+        table_content.push(inline);
+    }
+
     for row in table.rows.iter() {
         table_content.push(format_row(row, display_info, table));
+        // Add inline table which comes after current row
+        if let Some(inline) = retreive_inline_table(table, row.index) {
+            table_content.push(inline);
+        }
     }
     table_content
 }
 
-pub fn format_row(
-    row: &Row,
-    display_infos: &[ColumnDisplayInfo],
-    table: &Table,
-) -> Vec<Vec<String>> {
+pub fn format_row(row: &Row, display_infos: &[ColumnDisplayInfo], table: &Table) -> BuildTableItem {
     // The content of this specific row
     let mut temp_row_content = Vec::with_capacity(display_infos.len());
 
@@ -269,7 +302,7 @@ pub fn format_row(
         row_content.push(line);
     }
 
-    row_content
+    BuildTableItem::Row(row_content)
 }
 
 /// Apply the alignment for a column. Alignment can be either Left/Right/Center.
