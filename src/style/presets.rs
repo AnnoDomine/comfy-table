@@ -220,7 +220,7 @@ pub const UTF8_HORIZONTAL_ONLY: TableStyle = TableStyle::new()
     .top_border(LineStyle::none().fill('─').junction('─'))
     .header_separator(LineStyle::none().fill('═').junction('═'))
     .row_separator(LineStyle::none().fill('─').junction('─'))
-    .bottom_border(LineStyle::none().fill('═').junction('═'))
+    .bottom_border(LineStyle::none().fill('─').junction('─'))
     .top_inline_border(LineStyle::none().fill('═').junction('═'))
     .bottom_inline_border(LineStyle::none().fill('═').junction('═'));
 

@@ -67,7 +67,8 @@ fn simple_table_with_inline_table() {
 | Header1              | Header2              | Header3                |
 +======================================================================+
 | This is a text       | This is another text | This is the third text |
-+======================================================================+
+|----------------------+----------------------+------------------------|
++----------------------=----------------------=------------------------+
 | InlineHeader1        | InlineHeader2        | InlineHeader3          |
 +======================================================================+
 | This is a text       | This is another text | This is the third text |
@@ -75,7 +76,8 @@ fn simple_table_with_inline_table() {
 | This is another text | Now                  | This inline is awesome |
 |                      | add some inline      |                        |
 |                      | multi line stuff     |                        |
-+======================================================================+
++----------------------=----------------------=------------------------+
+|----------------------+----------------------+------------------------|
 | This is another text | Now                  | This is awesome        |
 |                      | add some             |                        |
 |                      | multi line stuff     |                        |

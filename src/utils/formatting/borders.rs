@@ -125,7 +125,7 @@ fn draw_top_inline_border(
     }
 
     for connection in connect_above_idx {
-        if connection <= &line.len() {
+        if connection < &line.len() {
             if line[*connection] == intersection {
                 line[*connection] = intersection_connector;
             } else {
@@ -177,7 +177,7 @@ fn draw_bottom_inline_border(
     }
 
     for connection in connect_below_idx {
-        if connection <= &line.len() {
+        if connection < &line.len() {
             if line[*connection] == intersection {
                 line[*connection] = intersection_connector;
             } else {
