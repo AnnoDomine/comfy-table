@@ -1,9 +1,6 @@
 use std::iter::repeat_n;
 
-use crossterm::style;
-
 use crate::{
-    inline_table,
     table::Table,
     utils::{
         ColumnDisplayInfo, arrangement::arrange_content, formatting::content_format::BuildTableItem,
@@ -14,6 +11,9 @@ pub(crate) fn draw_borders(
     table: &Table,
     rows: &[BuildTableItem],
     display_info: &[ColumnDisplayInfo],
+    last_inline_table_of_higherst_level: bool,
+    is_inline_table: bool,
+    very_last_border: &mut Option<String>,
 ) -> Vec<String> {
     // We know how many lines there should be. Initialize the vector with the rough correct amount.
     // We might over allocate a bit, but that's better than under allocating.
@@ -29,9 +29,22 @@ pub(crate) fn draw_borders(
         lines.push(draw_top_border(table, display_info));
     }
 
-    draw_rows(&mut lines, rows, table, display_info);
+    draw_rows(
+        &mut lines,
+        rows,
+        table,
+        display_info,
+        last_inline_table_of_higherst_level,
+        is_inline_table,
+        very_last_border,
+    );
 
-    if table.style.has_bottom_border() {
+    if !is_inline_table
+        && let Some(border) = very_last_border
+        && table.style.has_bottom_border()
+    {
+        lines.push(border.to_string());
+    } else if table.style.has_bottom_border() {
         lines.push(draw_bottom_border(table, display_info));
     }
 
@@ -72,11 +85,118 @@ fn draw_top_border(table: &Table, display_info: &[ColumnDisplayInfo]) -> String 
     line
 }
 
+fn draw_top_inline_border(
+    table: &Table,
+    display_info: &[ColumnDisplayInfo],
+    connect_above_idx: &Vec<usize>,
+) -> String {
+    let left_corner = table.style.top_inline_border.left.unwrap_or(' ');
+    let top_border = table.style.top_inline_border.fill.unwrap_or(' ');
+    let intersection = table.style.top_inline_border.junction.unwrap_or(' ');
+    let right_corner = table.style.top_inline_border.right.unwrap_or(' ');
+
+    let connector = table.style.bottom_inline_border.junction.unwrap_or(' ');
+
+    let intersection_connector = table.style.header_separator.junction.unwrap_or(' ');
+
+    let mut line: Vec<char> = Vec::new();
+    // We only need the top left corner, if we need to draw a left border
+    if should_draw_left_border(table) {
+        line.push(left_corner);
+    }
+
+    // Build the top border line depending on the columns' width.
+    // Also add the border intersections.
+    let mut first = true;
+    for info in display_info.iter() {
+        // Only add something, if the column isn't hidden
+        if !info.is_hidden {
+            if !first {
+                line.push(intersection);
+            }
+            line.extend(repeat_n(top_border, info.width().into()));
+            first = false;
+        }
+    }
+
+    // We only need the top right corner, if we need to draw a right border
+    if should_draw_right_border(table) {
+        line.push(right_corner);
+    }
+
+    for connection in connect_above_idx {
+        if connection <= &line.len() {
+            if line[*connection] == intersection {
+                line[*connection] = intersection_connector;
+            } else {
+                line[*connection] = connector;
+            }
+        }
+    }
+
+    line.into_iter().collect()
+}
+
+fn draw_bottom_inline_border(
+    table: &Table,
+    display_info: &[ColumnDisplayInfo],
+    connect_below_idx: &Vec<usize>,
+) -> String {
+    let left_corner = table.style.bottom_inline_border.left.unwrap_or(' ');
+    let bottom_border = table.style.bottom_inline_border.fill.unwrap_or(' ');
+    let intersection = table.style.bottom_inline_border.junction.unwrap_or(' ');
+    let right_corner = table.style.bottom_inline_border.right.unwrap_or(' ');
+
+    let connector = table.style.top_inline_border.junction.unwrap_or(' ');
+
+    let intersection_connector = table.style.header_separator.junction.unwrap_or(' ');
+
+    let mut line = Vec::new();
+    // We only need the bottom left corner, if we need to draw a left border
+    if should_draw_left_border(table) {
+        line.push(left_corner);
+    }
+
+    // Add the bottom border lines depending on column width
+    // Also add the border intersections.
+    let mut first = true;
+    for info in display_info.iter() {
+        // Only add something, if the column isn't hidden
+        if !info.is_hidden {
+            if !first {
+                line.push(intersection);
+            }
+            line.extend(repeat_n(bottom_border, info.width().into()));
+            first = false;
+        }
+    }
+
+    // We only need the bottom right corner, if we need to draw a right border
+    if should_draw_right_border(table) {
+        line.push(right_corner);
+    }
+
+    for connection in connect_below_idx {
+        if connection <= &line.len() {
+            if line[*connection] == intersection {
+                line[*connection] = intersection_connector;
+            } else {
+                line[*connection] = connector;
+            }
+        }
+    }
+
+    line.into_iter().collect()
+}
+
 fn draw_rows(
     lines: &mut Vec<String>,
     rows: &[BuildTableItem],
     table: &Table,
     display_info: &[ColumnDisplayInfo],
+    last_inline_table_of_higherst_level: bool,
+    is_inline_table: bool,
+    very_last_border: &mut Option<String>,
 ) {
     let draw_left_border = should_draw_left_border(table);
     let draw_right_border = should_draw_right_border(table);
@@ -87,6 +207,10 @@ fn draw_rows(
     while let Some((row_index, item)) = row_iter.next() {
         match item {
             BuildTableItem::Inline(inline) => {
+                if row_index == 0 && table.header.is_none() && table.style.has_top_border() {
+                    lines.pop();
+                }
+                // Apply arrangement, style and width from the parent table to the inner table.
                 let style = table.style();
                 let width = table.width();
                 let arrangement = table.content_arrangement();
@@ -96,33 +220,93 @@ fn draw_rows(
                 if let Some(w) = width {
                     inline_table.set_width(w);
                 }
-                // Remove the last dran seperator line to visual identify the inline table.
-                lines.pop();
 
-                // Add the header seperator as line if table has header seperators to identify start of inner table.
-                if table.style.has_header_separator() {
-                    lines.push(draw_horizontal_lines(
-                        &inline_table,
-                        &arrange_content(&inline_table),
-                        true,
-                    ));
+                // Crate the display information
+                let arranged_content = arrange_content(&inline_table);
+
+                // Identify as last item of highest level and parent is highest level
+                let is_last_item = row_iter.peek().is_none();
+                let last_item_and_inline_table_of_higherst_level_check =
+                    (!is_inline_table || last_inline_table_of_higherst_level) && is_last_item;
+                    
+                if table.style.has_bottom_border()
+                    && last_item_and_inline_table_of_higherst_level_check
+                {
+                    *very_last_border = Some(draw_bottom_border(&inline_table, &arranged_content))
                 }
 
-                println!("{:}", inline_table);
-
                 // Retreive inner table as a string vector.
-                let mut draw_inner_table = draw_borders(&inline_table, &inline.items, &arrange_content(&inline_table));
+                let mut draw_inner_table = draw_borders(
+                    &inline_table,
+                    &inline.items,
+                    &arranged_content,
+                    last_item_and_inline_table_of_higherst_level_check,
+                    true,
+                    very_last_border,
+                );
 
-                // Remove first line of inner table draw vector as the outer table have the seperator at it own.
-                draw_inner_table.remove(0);
-                // Remove the last drawn line of the inner table and apply the header separator line as a identifier of the end of an inner table.
-                draw_inner_table.pop();
-                if table.style.has_header_separator() {
-                    draw_inner_table.push(draw_horizontal_lines(
+                // Start manipulate borders so the inner table fitts to the parent
+
+                // Manipulate the top border of the inline table if the line before is a row
+                let mut connect_above_idx: Vec<usize> = Vec::new();
+                if let Some(junction) = table.style.top_inline_border.junction {
+                    // Find out where the junctions of the line above placed.
+                    let line = draw_top_inline_border(table, display_info, &Vec::new());
+                    let line_len = line.chars().count();
+                    connect_above_idx = line
+                        .chars()
+                        .enumerate()
+                        .filter(|(idx, c)| {
+                            table.style.has_vertical_lines()
+                                && *idx != 0
+                                && *idx != line_len - 1
+                                && *c == junction
+                        })
+                        .map(|(idx, _)| idx)
+                        .collect();
+                };
+
+                // Redraw top and bottom border of inner table
+
+                // Only redraw the top inline table border if it have one.
+                if inline_table.style.has_top_inline_border() && row_index != 0 {
+                    let inline_header_top_seperator = draw_top_inline_border(
                         &inline_table,
-                        &arrange_content(&inline_table),
-                        true,
-                    ));
+                        &arranged_content,
+                        &connect_above_idx,
+                    );
+                    if table.style.has_top_border() {
+                        draw_inner_table[0] = inline_header_top_seperator;
+                    } else {
+                        draw_inner_table.insert(0, inline_header_top_seperator);
+                    }
+                }
+
+                if inline_table.style.has_bottom_inline_border() {
+                    let inline_bootom_seperator = draw_bottom_inline_border(
+                        &inline_table,
+                        &arranged_content,
+                        &connect_above_idx,
+                    );
+                    if table.style.has_bottom_border() {
+                        draw_inner_table.pop();
+                    }
+
+                    // Only redraw the bottom inline table border if it have one.
+                    if !last_item_and_inline_table_of_higherst_level_check {
+                        draw_inner_table.push(inline_bootom_seperator);
+                        // To complete the connections, we draw a row seperator if the parent have one and we are not in the last row
+                        if table.style.has_row_separator()
+                            && table.style.has_bottom_border()
+                            && row_iter.peek().is_some()
+                        {
+                            draw_inner_table.push(draw_horizontal_lines(
+                                table,
+                                display_info,
+                                false,
+                            ));
+                        }
+                    }
                 }
 
                 // Append the inner table to the draw vector.
@@ -184,10 +368,6 @@ fn draw_horizontal_lines(
 ) -> String {
     // Styling depends on whether we're currently on the header line or not.
     let separator = if header {
-        println!(
-            "[draw_horizontal_lines] {:?}",
-            table.style().top_border
-        );
         table.style.header_separator
     } else {
         table.style.row_separator

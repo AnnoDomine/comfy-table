@@ -177,15 +177,10 @@ impl InlineTable {
         index_row_above: Option<usize>,
     ) -> BuildTableItem {
         let mut inline_table = Self::new_from_table(outer_table.clone(), index_row_above);
-        let style = outer_table.style();
-        inline_table.load_style(style);
         inline_table.table.columns = self.columns.clone();
         inline_table.table.header = self.header.clone();
         inline_table.table.rows = self.rows.clone();
         inline_table.table.inline_tables = self.inline_tables.clone();
-        // inline_table.style.top_border = outer_table.style.header_separator;
-        // inline_table.style.bottom_border = outer_table.style.header_separator;
-        println!("{:?}\n\n", outer_table.style.header_separator);
         let display_info = arrange_content(&inline_table);
         BuildTableItem::Inline(BuildInlineTableItem {
             items: format_content(&inline_table.table, &display_info),

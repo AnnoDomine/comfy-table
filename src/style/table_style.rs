@@ -171,6 +171,8 @@ pub struct TableStyle {
     pub content_lines: ContentLineStyle,
     pub row_separator: LineStyle,
     pub bottom_border: LineStyle,
+    pub top_inline_border: LineStyle,
+    pub bottom_inline_border: LineStyle,
 }
 
 impl TableStyle {
@@ -183,6 +185,8 @@ impl TableStyle {
             content_lines: ContentLineStyle::none(),
             row_separator: LineStyle::none(),
             bottom_border: LineStyle::none(),
+            top_inline_border: LineStyle::none(),
+            bottom_inline_border: LineStyle::none(),
         }
     }
 
@@ -219,6 +223,18 @@ impl TableStyle {
     /// Set the bottom border of the table.
     pub const fn bottom_border(mut self, line: LineStyle) -> Self {
         self.bottom_border = line;
+        self
+    }
+
+    /// Set the top inline border
+    pub const fn top_inline_border(mut self, line: LineStyle) -> Self {
+        self.top_inline_border = line;
+        self
+    }
+
+    /// Set the bottom inline border
+    pub const fn bottom_inline_border(mut self, line: LineStyle) -> Self {
+        self.bottom_inline_border = line;
         self
     }
 
@@ -271,6 +287,14 @@ impl TableStyle {
 
     pub(crate) const fn has_row_separator(&self) -> bool {
         self.row_separator.is_visible()
+    }
+
+    pub(crate) const fn has_top_inline_border(&self) -> bool {
+        self.top_inline_border.is_visible()
+    }
+
+    pub(crate) const fn has_bottom_inline_border(&self) -> bool {
+        self.bottom_inline_border.is_visible()
     }
 
     /// The left border is drawn as soon as any component in the leftmost column exists.
