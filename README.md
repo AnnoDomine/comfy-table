@@ -10,6 +10,7 @@
 >
 > - **Reason for fork**: Upstream prefers not to add inline table support to avoid complexity; this fork exists specifically to provide this feature (e.g. for projects like `rrdu` / `rust-recursive-deps-updater`).
 > - **Issue reporting**: Please direct all generic bug reports or feature requests for upstream features to the [original project](https://github.com/Nukesor/comfy-table). For issues specific to inline tables or this fork, please file them at [AnnoDomine/comfy-table](https://github.com/AnnoDomine/comfy-table).
+> - **Maintaining**: I will not provide any updates as long as they are not needed for my project, this version is used to.
 
 ## Installation
 
